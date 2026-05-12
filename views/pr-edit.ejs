@@ -1,0 +1,146 @@
+<%- include('partials/header') %>
+
+<form method="POST" action="/pr/save" id="prForm">
+  <input type="hidden" name="id" value="<%= pr.id || '' %>">
+  <input type="hidden" name="action" id="formAction" value="save">
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <% if (isNew) { %>New Purchase Requisition<% } else { %>Edit PR <span class="font-monospace text-muted small"><%= pr.indentNo || `Draft #${pr.id}` %></span><% } %>
+      </h5>
+      <% if (!isNew && pr.status) { %>
+        <% const status = pr.status; %><%- include('partials/status-pill', { status }) %>
+      <% } %>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Department</label>
+          <select name="departmentCode" class="form-select" id="deptSelect" required>
+            <% allDepartments.forEach(d => { %>
+              <option value="<%= d.code %>" data-name="<%= d.name %>" <%= pr.departmentCode === d.code ? 'selected' : '' %>><%= d.code %> &mdash; <%= d.name %></option>
+            <% }) %>
+          </select>
+          <input type="hidden" name="departmentName" id="deptName" value="<%= pr.departmentName %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Indent date</label>
+          <input type="date" name="indentDate" class="form-control" value="<%= pr.indentDate %>" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Indentor</label>
+          <input class="form-control" value="<%= pr.indentorDisplay %>" readonly>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Indent No</label>
+          <input class="form-control font-monospace" value="<%= pr.indentNo || 'Auto on submit' %>" readonly>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Verifier</label>
+          <select name="verifierEmail" class="form-select" required>
+            <% allUsers.filter(u => (u.roles||[]).includes('Verifier')).forEach(u => { %>
+              <option value="<%= u.email %>" <%= pr.verifierEmail === u.email ? 'selected' : '' %>><%= u.displayName %> (<%= u.departmentCode %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Approver (Project Head)</label>
+          <input class="form-control" value="Joe Broking / Rizwan M (assigned automatically — either may sign)" disabled>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Special instructions</label>
+          <textarea name="specialInstructions" class="form-control" rows="2"><%= pr.specialInstructions || '' %></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Line items</h5>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="addItemBtn">+ Add item</button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+      <table class="table table-bordered align-middle mb-0" id="itemsTable">
+        <thead class="table-light small">
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Description</th>
+            <th>Size</th>
+            <th>Specification</th>
+            <th>UOM</th>
+            <th class="text-end">Req.</th>
+            <th class="text-end">Stock</th>
+            <th class="text-end">To buy</th>
+            <th>Area of utilization</th>
+            <th>R.O.S</th>
+            <th class="text-end">USD/unit</th>
+            <th class="text-end">Line total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody">
+          <% (pr.items || []).forEach((it, i) => { %>
+            <tr>
+              <td class="text-center"><%= i+1 %></td>
+              <td><input name="itemDescription" class="form-control form-control-sm" value="<%= it.description %>"></td>
+              <td><input name="itemSize" class="form-control form-control-sm" value="<%= it.size %>"></td>
+              <td><input name="specification" class="form-control form-control-sm" value="<%= it.specification %>"></td>
+              <td><input name="uom" class="form-control form-control-sm" value="<%= it.uom %>" style="width:70px"></td>
+              <td><input name="qtyRequirement" type="number" step="any" class="form-control form-control-sm text-end qty-req" value="<%= it.qtyRequirement %>" style="width:90px"></td>
+              <td><input name="qtyStockInHand" type="number" step="any" class="form-control form-control-sm text-end qty-stk" value="<%= it.qtyStockInHand %>" style="width:90px"></td>
+              <td class="text-end qty-tobuy small text-muted"><%= it.qtyToBuy %></td>
+              <td><input name="areaOfUtilization" class="form-control form-control-sm" value="<%= it.areaOfUtilization %>"></td>
+              <td><input name="rosDate" type="text" class="form-control form-control-sm" placeholder="Immediate / 30-Jun-2026" value="<%= it.rosDate %>"></td>
+              <td><input name="estValueUsdPerUnit" type="number" step="any" class="form-control form-control-sm text-end unit-price" value="<%= it.estValueUsdPerUnit %>" style="width:110px"></td>
+              <td class="text-end line-total small text-muted">$<%= (it.lineTotalUSD || 0).toFixed(2) %></td>
+              <td><button type="button" class="btn btn-sm btn-outline-danger remove-item">&times;</button></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card-footer bg-white text-end">
+      <strong>Estimated total:</strong> <span id="grandTotal">$<%= ((pr.totalEstValueUSD)||0).toFixed(2) %></span>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <label class="form-label">Submission remarks (optional)</label>
+      <input name="submitRemarks" class="form-control" placeholder="A short note for the verifier">
+      <div class="d-flex justify-content-between mt-3">
+        <a href="/" class="btn btn-outline-secondary">Cancel</a>
+        <div>
+          <button type="submit" class="btn btn-light border" onclick="document.getElementById('formAction').value='save'">Save draft</button>
+          <button type="submit" class="btn btn-success" onclick="document.getElementById('formAction').value='submit'">Submit for verification</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<template id="itemRowTemplate">
+  <tr>
+    <td class="text-center row-index"></td>
+    <td><input name="itemDescription" class="form-control form-control-sm"></td>
+    <td><input name="itemSize" class="form-control form-control-sm"></td>
+    <td><input name="specification" class="form-control form-control-sm"></td>
+    <td><input name="uom" class="form-control form-control-sm" style="width:70px"></td>
+    <td><input name="qtyRequirement" type="number" step="any" class="form-control form-control-sm text-end qty-req" style="width:90px"></td>
+    <td><input name="qtyStockInHand" type="number" step="any" class="form-control form-control-sm text-end qty-stk" style="width:90px"></td>
+    <td class="text-end qty-tobuy small text-muted">0</td>
+    <td><input name="areaOfUtilization" class="form-control form-control-sm"></td>
+    <td><input name="rosDate" type="text" class="form-control form-control-sm" placeholder="Immediate / 30-Jun-2026"></td>
+    <td><input name="estValueUsdPerUnit" type="number" step="any" class="form-control form-control-sm text-end unit-price" style="width:110px"></td>
+    <td class="text-end line-total small text-muted">$0.00</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger remove-item">&times;</button></td>
+  </tr>
+</template>
+
+<%- include('partials/footer') %>

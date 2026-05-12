@@ -1,0 +1,19 @@
+{
+  "name": "mmcl-pr-local-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local offline prototype of MMCL Purchase Requisition digital approval workflow. Mirrors the future SharePoint/Power Platform deployment so logic and UX can be validated before going to the tenant.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node lib/seed.js",
+    "reset": "node lib/seed.js --reset"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^2.1.1"
+  }
+}

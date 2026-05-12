@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MMCL Approval Workspace</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="/">MMCL Approval Workspace <span class="badge bg-warning text-dark ms-2 small">LOCAL PROTOTYPE</span></a>
+    <div class="d-flex align-items-center">
+      <a class="btn btn-sm btn-outline-light me-2" href="/">Home</a>
+      <a class="btn btn-sm btn-outline-light me-2" href="/pr">PR Dashboard</a>
+      <a class="btn btn-sm btn-outline-light me-2" href="/pr/list">All PRs</a>
+      <% if ((currentUser.roles || []).includes('Indentor')) { %>
+        <a class="btn btn-sm btn-success me-3" href="/pr/new">+ New PR</a>
+      <% } %>
+      <div class="text-light me-3 small text-end">
+        <div><strong><%= currentUser.displayName %></strong></div>
+        <div class="text-secondary"><%= (currentUser.roles || []).join(' · ') %></div>
+      </div>
+      <form action="/logout" method="POST" class="d-inline">
+        <button class="btn btn-sm btn-outline-light">Sign out</button>
+      </form>
+    </div>
+  </div>
+</nav>
+<div class="container-fluid py-3">
+<% if (flash) { %>
+  <div class="alert alert-<%= flash.type === 'error' ? 'danger' : 'success' %> alert-dismissible fade show" role="alert">
+    <%= flash.msg %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>

@@ -1,0 +1,315 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h4 class="mb-0">
+      <span class="font-monospace"><%= pr.indentNo || `Draft #${pr.id} (PR number pending)` %></span>
+      <% const status = pr.status; %><%- include('partials/status-pill', { status }) %>
+    </h4>
+    <small class="text-muted">Stage: <strong><%= pr.currentStage %></strong> · Last updated <%= new Date(pr.updatedAt).toLocaleString() %></small>
+    <% if (pr.wbs) { %>
+      <div class="mt-1"><span class="badge bg-info text-dark font-monospace">Budget / Cost Head (WBS): <%= pr.wbs %></span></div>
+    <% } %>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-primary" href="/pr/<%= pr.id %>/download">⬇ Download Excel</a>
+    <% if (canEdit) { %>
+      <a class="btn btn-warning" href="/pr/<%= pr.id %>/edit">Edit & Resubmit</a>
+    <% } %>
+    <a class="btn btn-outline-secondary" href="/pr">PR Dashboard</a>
+  </div>
+</div>
+
+<!-- Workflow progress strip -->
+<%
+  const stages = ['Indentor', 'ProjectTeam', 'Indentor (Review)', 'Verifier', 'Approver', 'Purchase'];
+  function currentStageIndex(pr) {
+    if (pr.status === 'Draft') return 0;
+    if (pr.status === 'WithProjectTeam') return 1;
+    if (pr.status === 'AwaitingIndentorForward' || pr.status === 'ReturnedForEdit') return 2;
+    if (pr.status === 'WithVerifier') return 3;
+    if (pr.status === 'WithApprover') return 4;
+    if (pr.status === 'Approved') return 5;
+    if (pr.status === 'ClosedByPurchase') return 6;
+    return -1;
+  }
+  const stageIdx = currentStageIndex(pr);
+%>
+<div class="card shadow-sm mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex align-items-center small">
+      <% stages.forEach((s, i) => { %>
+        <div class="flex-fill text-center">
+          <div class="badge <%= stageIdx > i ? 'bg-success' : (stageIdx === i ? 'bg-primary' : 'bg-light text-muted') %>">
+            <%= i+1 %>. <%= s %>
+          </div>
+        </div>
+        <% if (i < stages.length - 1) { %>
+          <div class="text-muted px-1">→</div>
+        <% } %>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white"><strong>Header</strong></div>
+      <div class="card-body row g-2">
+        <div class="col-md-4"><div class="text-muted small">Department</div><div><%= pr.departmentName %> (<%= pr.departmentCode %>)</div></div>
+        <div class="col-md-4"><div class="text-muted small">Indent date</div><div><%= pr.indentDate %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Fiscal year</div><div><%= pr.fiscalYear || '—' %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Indentor</div><div><%= pr.indentorDisplay %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Project Team member</div><div><%= pr.projectTeamMemberDisplay || '— (assignment pending)' %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Budget / Cost Head (WBS)</div><div class="font-monospace"><%= pr.wbs || '— (pending Project Team)' %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Verifier</div><div><%= pr.verifierDisplay %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Approver (Project Head)</div><div><%= pr.approverDisplay || 'Joe Broking / Rizwan M (either may sign)' %></div></div>
+        <div class="col-md-4"><div class="text-muted small">Total est. value</div><div>$<%= (pr.totalEstValueUSD || 0).toFixed(2) %></div></div>
+        <% if (pr.specialInstructions) { %>
+          <div class="col-12"><div class="text-muted small">Special instructions</div><div><%= pr.specialInstructions %></div></div>
+        <% } %>
+      </div>
+    </div>
+
+<%
+  function findApproval(stage, action) {
+    for (let i = approvals.length - 1; i >= 0; i--) {
+      const a = approvals[i];
+      if (a.stage === stage && (!action || a.action === action)) return a;
+    }
+    return null;
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${String(d.getDate()).padStart(2,'0')}-${m[d.getMonth()]}-${d.getFullYear()}`;
+  }
+  const submission = findApproval('Indentor', 'Submitted');
+  const verifierApprove = findApproval('Verifier', 'Approved');
+  const approverApprove = findApproval('Approver', 'Approved');
+%>
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white"><strong>Digital signatures</strong></div>
+  <div class="card-body row g-3">
+    <div class="col-md-4">
+      <div class="signature-block <%= submission ? 'signed' : '' %>">
+        <div class="signature-label">Indentor:</div>
+        <% if (submission) { %>
+          <div class="signature-name"><%= submission.actorDisplay %></div>
+          <div class="signature-date">✓ Signed <%= fmtDate(submission.actionTimestamp) %></div>
+        <% } else { %>
+          <div class="signature-pending">— not yet signed</div>
+        <% } %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="signature-block <%= verifierApprove ? 'signed' : '' %>">
+        <div class="signature-label">Verified by:</div>
+        <% if (verifierApprove) { %>
+          <div class="signature-name"><%= verifierApprove.actorDisplay %></div>
+          <div class="signature-date">✓ Signed <%= fmtDate(verifierApprove.actionTimestamp) %></div>
+          <% if (verifierApprove.remarks) { %><div class="signature-remarks">“<%= verifierApprove.remarks %>”</div><% } %>
+        <% } else { %>
+          <div class="signature-pending">— pending <%= pr.verifierDisplay %></div>
+        <% } %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="signature-block <%= approverApprove ? 'signed' : '' %>">
+        <div class="signature-label">Approved by · Project Head:</div>
+        <% if (approverApprove) { %>
+          <div class="signature-name"><%= approverApprove.actorDisplay %></div>
+          <div class="signature-date">✓ Signed <%= fmtDate(approverApprove.actionTimestamp) %></div>
+          <% if (approverApprove.remarks) { %><div class="signature-remarks">“<%= approverApprove.remarks %>”</div><% } %>
+        <% } else { %>
+          <div class="signature-pending">— pending Joe Broking / Rizwan M</div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white d-flex justify-content-between"><strong>Line items</strong>
+        <span>Total: <strong>$<%= (pr.totalEstValueUSD || 0).toFixed(2) %></strong></span></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light small">
+            <tr><th>#</th><th>Description</th><th>Size</th><th>Spec</th><th>UOM</th>
+                <th class="text-end">Req.</th><th class="text-end">Stock</th><th class="text-end">To buy</th>
+                <th>Area</th><th>R.O.S</th><th class="text-end">USD/unit</th><th class="text-end">Line total</th><th>Cost head</th></tr>
+          </thead>
+          <tbody>
+          <% (pr.items || []).forEach((it, i) => { %>
+            <tr>
+              <td><%= i+1 %></td>
+              <td><%= it.description %></td>
+              <td><%= it.size %></td>
+              <td class="small"><%= it.specification %></td>
+              <td><%= it.uom %></td>
+              <td class="text-end"><%= it.qtyRequirement %></td>
+              <td class="text-end"><%= it.qtyStockInHand %></td>
+              <td class="text-end"><%= it.qtyToBuy %></td>
+              <td><%= it.areaOfUtilization %></td>
+              <td><%= it.rosDate %></td>
+              <td class="text-end"><%= Number(it.estValueUsdPerUnit||0).toFixed(2) %></td>
+              <td class="text-end">$<%= Number(it.lineTotalUSD||0).toFixed(2) %></td>
+              <td><%= it.budgetCostHead %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <% if (canProjectTeamAct) { %>
+      <div class="card shadow-sm mb-3 border-info">
+        <div class="card-header bg-info text-white"><strong>Project Team action</strong></div>
+        <div class="card-body">
+          <form method="POST" action="/pr/<%= pr.id %>/project-team-action">
+            <p class="small text-muted mb-2">Assign a PR number and a Budget/Cost Head (WBS), or return / reject.</p>
+            <label class="form-label">Budget / Cost Head (WBS) <span class="text-danger">*</span></label>
+            <input class="form-control mb-3 font-monospace" name="wbs" placeholder="e.g. M-1017-C-IDC-IT" required>
+
+            <div class="mb-3">
+              <label class="form-label">PR number</label>
+              <div class="form-check small">
+                <input class="form-check-input" type="radio" name="indentNoMode" value="auto" id="modeAuto" checked>
+                <label class="form-check-label" for="modeAuto">
+                  Auto-generate next sequential (<code>MMCL PR-NNN</code>)
+                </label>
+              </div>
+              <div class="form-check small">
+                <input class="form-check-input" type="radio" name="indentNoMode" value="manual" id="modeManual">
+                <label class="form-check-label" for="modeManual">Manually enter:</label>
+              </div>
+              <input class="form-control form-control-sm mt-1 font-monospace" name="indentNoOverride"
+                     placeholder="e.g. MMCL PR-467">
+            </div>
+
+            <textarea class="form-control mb-2" name="remarks" rows="2" placeholder="Remarks (required to return / reject)"></textarea>
+            <div class="d-grid gap-2">
+              <button class="btn btn-success" name="decision" value="assign">Assign PR# + WBS → Indentor</button>
+              <button class="btn btn-warning" name="decision" value="return">Return for edit</button>
+              <button class="btn btn-outline-danger" name="decision" value="reject">Reject</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (canIndentorForward) { %>
+      <div class="card shadow-sm mb-3 border-primary">
+        <div class="card-header bg-primary text-white"><strong>Review & forward</strong></div>
+        <div class="card-body">
+          <p class="small">
+            Project Team has assigned:<br>
+            <strong>PR No:</strong> <span class="font-monospace"><%= pr.indentNo %></span><br>
+            <strong>Budget / Cost Head (WBS):</strong> <span class="font-monospace"><%= pr.wbs %></span>
+          </p>
+          <p class="small text-muted">Review the assignment, then forward to <strong><%= pr.verifierDisplay %></strong> for verification.</p>
+          <form method="POST" action="/pr/<%= pr.id %>/forward">
+            <textarea class="form-control mb-2" name="remarks" rows="2" placeholder="Optional remarks for verifier"></textarea>
+            <button class="btn btn-success w-100">Forward to Verifier →</button>
+          </form>
+          <hr class="my-3">
+          <p class="small text-muted mb-2">If the PR# or WBS is wrong, contact the Project Team to reassign.</p>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (canVerify) { %>
+      <div class="card shadow-sm mb-3 border-warning">
+        <div class="card-header bg-warning"><strong>Verifier action</strong></div>
+        <div class="card-body">
+          <form method="POST" action="/pr/<%= pr.id %>/verifier-action">
+            <textarea class="form-control mb-2" name="remarks" rows="3" placeholder="Remarks (required for return / reject)"></textarea>
+            <div class="d-grid gap-2">
+              <button class="btn btn-success" name="decision" value="approve">Approve → forward to <%= pr.approverDisplay %></button>
+              <button class="btn btn-warning" name="decision" value="return">Return for edit</button>
+              <button class="btn btn-outline-danger" name="decision" value="reject">Reject</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (canApprove) { %>
+      <div class="card shadow-sm mb-3 border-warning">
+        <div class="card-header bg-warning"><strong>Approver action (Project Head)</strong></div>
+        <div class="card-body">
+          <form method="POST" action="/pr/<%= pr.id %>/approver-action">
+            <textarea class="form-control mb-2" name="remarks" rows="3" placeholder="Remarks (required for return / reject)"></textarea>
+            <div class="d-grid gap-2">
+              <button class="btn btn-success" name="decision" value="approve">Approve → forward to Purchase</button>
+              <button class="btn btn-warning" name="decision" value="return">Return for edit</button>
+              <button class="btn btn-outline-danger" name="decision" value="reject">Reject</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (canCloseout) { %>
+      <div class="card shadow-sm mb-3 border-info">
+        <div class="card-header bg-info text-white"><strong>Purchase closeout</strong></div>
+        <div class="card-body">
+          <form method="POST" action="/pr/<%= pr.id %>/closeout">
+            <label class="form-label">Purchase Indent No</label>
+            <input class="form-control mb-2" name="purchaseIndentNo" required>
+            <label class="form-label">Receipt date</label>
+            <input class="form-control mb-2" type="date" name="purchaseReceiptDate">
+            <label class="form-label">Document Reference No</label>
+            <input class="form-control mb-3" name="purchaseDocRef">
+            <button class="btn btn-info text-white w-100">Mark closed</button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (canCancel) { %>
+      <form method="POST" action="/pr/<%= pr.id %>/cancel" class="mb-3" onsubmit="return confirm('Cancel this PR?')">
+        <input type="hidden" name="remarks" value="Cancelled by indentor">
+        <button class="btn btn-sm btn-outline-secondary w-100">Cancel this PR</button>
+      </form>
+    <% } %>
+
+    <% if (pr.purchase && pr.purchase.indentNo) { %>
+      <div class="card shadow-sm mb-3 border-success">
+        <div class="card-header bg-success text-white"><strong>Purchase closeout (recorded)</strong></div>
+        <div class="card-body small">
+          <div><strong>Purchase Indent:</strong> <%= pr.purchase.indentNo %></div>
+          <div><strong>Receipt date:</strong> <%= pr.purchase.receiptDate || '—' %></div>
+          <div><strong>Doc ref:</strong> <%= pr.purchase.docRef || '—' %></div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white"><strong>Approval timeline</strong></div>
+      <ul class="list-group list-group-flush">
+        <% if (approvals.length === 0) { %>
+          <li class="list-group-item text-muted small">No actions yet.</li>
+        <% } %>
+        <% approvals.slice().reverse().forEach(a => { %>
+          <li class="list-group-item small">
+            <div class="d-flex justify-content-between">
+              <strong><%= a.action %></strong>
+              <span class="text-muted"><%= new Date(a.actionTimestamp).toLocaleString() %></span>
+            </div>
+            <div><%= a.actorDisplay %> · stage <em><%= a.stage %></em><% if (a.toStage) { %> → <em><%= a.toStage %></em><% } %></div>
+            <% if (a.remarks) { %><div class="text-muted">“<%= a.remarks %>”</div><% } %>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

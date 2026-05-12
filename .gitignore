@@ -1,0 +1,10 @@
+node_modules/
+db.json
+cookies.txt
+generated/*.xlsx
+generated/*.tmp
+.env
+*.log
+*.bak
+.DS_Store
+Thumbs.db

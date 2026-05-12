@@ -1,0 +1,114 @@
+<%- include('partials/header') %>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card text-bg-light shadow-sm">
+      <div class="card-body">
+        <h6 class="text-muted mb-1">My drafts</h6>
+        <h2 class="mb-0"><%= drafts.length %></h2>
+        <small class="text-muted">Not yet submitted</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-warning shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-1">Awaiting my action</h6>
+        <h2 class="mb-0"><%= awaitingMe.length %></h2>
+        <small>Verify / Approve / Closeout</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-danger shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-1">Returned for edit</h6>
+        <h2 class="mb-0"><%= returned.length %></h2>
+        <small>Need to fix and resubmit</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-secondary shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-1">Submitted by me (lifetime)</h6>
+        <h2 class="mb-0"><%= submittedByMe.length %></h2>
+        <small>All statuses</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h4 class="mt-4">Awaiting my action</h4>
+<%
+  function pillColour(status) {
+    return ({Draft:'secondary',WithProjectTeam:'info',AwaitingIndentorForward:'primary',WithVerifier:'warning',WithApprover:'warning',ReturnedForEdit:'danger',Approved:'info',ClosedByPurchase:'success',Rejected:'dark',Cancelled:'secondary'})[status] || 'secondary';
+  }
+%>
+<% if (awaitingMe.length === 0) { %>
+  <p class="text-muted">Nothing on your plate.</p>
+<% } else { %>
+  <table class="table table-hover bg-white">
+    <thead><tr><th>Indent No</th><th>Status</th><th>Stage</th><th>Department</th><th>Indentor</th><th class="text-end">Total (USD)</th><th></th></tr></thead>
+    <tbody>
+    <% awaitingMe.forEach(p => { %>
+      <tr>
+        <td class="font-monospace"><%= p.indentNo || `(Draft #${p.id})` %></td>
+        <td><span class="badge bg-<%= pillColour(p.status) %>"><%= p.status %></span></td>
+        <td><%= p.currentStage %></td>
+        <td><%= p.departmentName %></td>
+        <td><%= p.indentorDisplay %></td>
+        <td class="text-end">$<%= (p.totalEstValueUSD || 0).toFixed(2) %></td>
+        <td><a class="btn btn-sm btn-primary" href="/pr/<%= p.id %>">Open</a></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<% if (awaitingForward && awaitingForward.length > 0) { %>
+  <h4 class="mt-4 text-primary">Awaiting your forward (PR#/WBS assigned, ready to push to verifier)</h4>
+  <table class="table table-hover bg-white">
+    <thead><tr><th>Indent No</th><th>WBS</th><th>Status</th><th>Department</th><th>Verifier (next)</th><th class="text-end">Total (USD)</th><th></th></tr></thead>
+    <tbody>
+    <% awaitingForward.forEach(p => { %>
+      <tr>
+        <td class="font-monospace"><%= p.indentNo %></td>
+        <td class="font-monospace small"><%= p.wbs || '—' %></td>
+        <td><span class="badge bg-<%= pillColour(p.status) %>"><%= p.status %></span></td>
+        <td><%= p.departmentName %></td>
+        <td><%= p.verifierDisplay %></td>
+        <td class="text-end">$<%= (p.totalEstValueUSD || 0).toFixed(2) %></td>
+        <td><a class="btn btn-sm btn-primary" href="/pr/<%= p.id %>">Open</a></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<h4 class="mt-4">My drafts &amp; returned</h4>
+<% const myEditable = drafts.concat(returned); %>
+<% if (myEditable.length === 0) { %>
+  <p class="text-muted">No drafts. Click <strong>+ New PR</strong> in the top right to start one.</p>
+<% } else { %>
+  <table class="table table-hover bg-white">
+    <thead><tr><th>Indent No</th><th>Status</th><th>Department</th><th>Items</th><th class="text-end">Total (USD)</th><th></th></tr></thead>
+    <tbody>
+    <% myEditable.forEach(p => { %>
+      <tr>
+        <td class="font-monospace"><%= p.indentNo || `(Draft #${p.id})` %></td>
+        <td><span class="badge bg-<%= pillColour(p.status) %>"><%= p.status %></span></td>
+        <td><%= p.departmentName %></td>
+        <td><%= (p.items || []).length %></td>
+        <td class="text-end">$<%= (p.totalEstValueUSD || 0).toFixed(2) %></td>
+        <td>
+          <a class="btn btn-sm btn-outline-primary" href="/pr/<%= p.id %>/edit">Edit</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/pr/<%= p.id %>">View</a>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">All PRs</h4>
+  <div class="btn-group">
+    <a class="btn btn-sm btn-<%= filter==='all'?'primary':'outline-primary' %>" href="/pr/list?filter=all">All</a>
+    <a class="btn btn-sm btn-<%= filter==='mine'?'primary':'outline-primary' %>" href="/pr/list?filter=mine">Submitted by me</a>
+    <a class="btn btn-sm btn-<%= filter==='awaiting'?'primary':'outline-primary' %>" href="/pr/list?filter=awaiting">Awaiting me</a>
+  </div>
+</div>
+
+<%
+  function pillColour(status) {
+    return ({Draft:'secondary',WithProjectTeam:'info',AwaitingIndentorForward:'primary',WithVerifier:'warning',WithApprover:'warning',ReturnedForEdit:'danger',Approved:'info',ClosedByPurchase:'success',Rejected:'dark',Cancelled:'secondary'})[status] || 'secondary';
+  }
+%>
+
+<% if (prs.length === 0) { %>
+  <p class="text-muted">No PRs match.</p>
+<% } else { %>
+  <table class="table table-hover bg-white">
+    <thead>
+      <tr>
+        <th>Indent No</th><th>Status</th><th>Stage</th><th>Dept</th><th>Indentor</th>
+        <th>Verifier</th><th>Approver</th><th class="text-end">Total (USD)</th><th>Updated</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    <% prs.forEach(p => { %>
+      <tr>
+        <td class="font-monospace small"><%= p.indentNo || `(Draft #${p.id})` %></td>
+        <td><span class="badge bg-<%= pillColour(p.status) %>"><%= p.status %></span></td>
+        <td><%= p.currentStage %></td>
+        <td><%= p.departmentCode %></td>
+        <td><%= p.indentorDisplay %></td>
+        <td><%= p.verifierDisplay %></td>
+        <td><%= p.approverDisplay %></td>
+        <td class="text-end">$<%= (p.totalEstValueUSD || 0).toFixed(2) %></td>
+        <td class="small text-muted"><%= new Date(p.updatedAt).toLocaleString() %></td>
+        <td><a class="btn btn-sm btn-primary" href="/pr/<%= p.id %>">Open</a></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<%- include('partials/footer') %>

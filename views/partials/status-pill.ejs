@@ -1,0 +1,16 @@
+<%
+  const colours = {
+    Draft: 'secondary',
+    WithProjectTeam: 'info',
+    AwaitingIndentorForward: 'primary',
+    WithVerifier: 'warning',
+    WithApprover: 'warning',
+    ReturnedForEdit: 'danger',
+    Approved: 'info',
+    ClosedByPurchase: 'success',
+    Rejected: 'dark',
+    Cancelled: 'secondary'
+  };
+  const colour = colours[status] || 'secondary';
+%>
+<span class="badge bg-<%= colour %>"><%= status %></span>

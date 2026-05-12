@@ -1,0 +1,52 @@
+<%- include('partials/header') %>
+
+<div class="landing-hero text-center py-5">
+  <div class="display-5 fw-bold text-dark">MESABI METALLICS COMPANY LLC</div>
+  <div class="text-muted mb-1">Approval Workspace</div>
+  <p class="text-muted">Pick what you want to start.</p>
+</div>
+
+<div class="row justify-content-center g-4 mb-5">
+  <div class="col-md-5">
+    <a href="/pr" class="text-decoration-none">
+      <div class="card landing-tile shadow-sm h-100 border-primary border-2">
+        <div class="card-body text-center p-5">
+          <div class="display-1 text-primary mb-3">📄</div>
+          <h3 class="card-title text-dark">Purchase Requisition</h3>
+          <p class="text-muted">Raise a PR, route it through Project Team, Verifier, and Project Head, and track it to Purchase closeout.</p>
+          <div class="mt-3">
+            <% if (counts.awaiting > 0) { %>
+              <span class="badge bg-warning text-dark"><%= counts.awaiting %> awaiting your action</span>
+            <% } %>
+            <% if (counts.drafts > 0) { %>
+              <span class="badge bg-secondary"><%= counts.drafts %> draft<%= counts.drafts === 1 ? '' : 's' %></span>
+            <% } %>
+          </div>
+          <button class="btn btn-primary btn-lg mt-4">Open PR Workspace →</button>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-5">
+    <a href="/nfa" class="text-decoration-none">
+      <div class="card landing-tile shadow-sm h-100 border-secondary border-2 opacity-75">
+        <div class="card-body text-center p-5">
+          <div class="display-1 text-secondary mb-3">📝</div>
+          <h3 class="card-title text-dark">Note for Approval</h3>
+          <p class="text-muted">Digital NFA workflow — same approval engine as PR, different form.</p>
+          <div class="mt-3">
+            <span class="badge bg-light text-dark">Coming in Phase 2</span>
+          </div>
+          <button class="btn btn-outline-secondary btn-lg mt-4">Preview →</button>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="text-center text-muted small">
+  Prototype build · running locally on your machine · data stored in <code>db.json</code>
+</div>
+
+<%- include('partials/footer') %>

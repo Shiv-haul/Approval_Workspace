@@ -1,0 +1,36 @@
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.card-header { border-bottom: 1px solid rgba(0,0,0,.075); }
+.font-monospace { font-family: 'Cascadia Code', 'Consolas', monospace; }
+table th { white-space: nowrap; }
+.qty-tobuy, .line-total { font-variant-numeric: tabular-nums; }
+.navbar .form-select { background-color: #fff; }
+.landing-tile { transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; }
+.landing-tile:hover { transform: translateY(-4px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.12) !important; }
+.landing-hero .display-5 { letter-spacing: -0.5px; }
+
+/* Digital signature blocks — mimic the look of the paper PR */
+.signature-block {
+  border: 1px dashed #cfd4d9;
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: #fafbfc;
+  min-height: 110px;
+}
+.signature-block.signed {
+  border-style: solid;
+  border-color: #198754;
+  background: #f3faf6;
+}
+.signature-label { font-size: 0.85rem; color: #6c757d; margin-bottom: 4px; }
+.signature-name {
+  font-family: 'Caveat', 'Brush Script MT', cursive;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #1a3d7c;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+.signature-date { font-size: 0.85rem; color: #198754; font-weight: 600; }
+.signature-remarks { font-size: 0.8rem; color: #6c757d; font-style: italic; margin-top: 4px; }
+.signature-pending { font-size: 0.85rem; color: #adb5bd; font-style: italic; margin-top: 16px; }
